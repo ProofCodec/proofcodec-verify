@@ -4,7 +4,11 @@ Verifies that the decode-only extraction produces correct results
 using known test vectors from the ProofCodec encoder.
 """
 
+import json
+import subprocess
+
 import pytest
+from proofcodec_verify.proof.bundle import verify_bundle, ProofBundle
 from proofcodec_verify.codec.combinadic import (
     binom, binom_bitlen, rank_subset, unrank_subset,
     decode_uvarint, decode_bigint_be,
@@ -219,6 +223,53 @@ class TestV18Codec:
 
         with pytest.raises(ValueError, match="Invalid magic"):
             V18Header.from_bytes(bad_bytes)
+
+
+class TestBundleVerification:
+    def test_verify_without_model(self, tmp_path):
+        """Model-less bundle with mismatches verifies when residual present."""
+        manifest = {"endgame": "test", "version": "v18", "model_hash": "abc",
+                     "total_positions": 1000, "mismatches": 5}
+        (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+        (tmp_path / "residual.v18").write_bytes(b"\x00")
+        result = verify_bundle(tmp_path)
+        assert result.model_hash_valid is True
+        assert result.model_included is False
+        assert result.manifest_valid is True
+
+    def test_verify_zero_mismatch_no_residual(self, tmp_path):
+        """Zero-mismatch bundle needs no residual or model."""
+        manifest = {"endgame": "exact", "version": "v18",
+                     "total_positions": 500, "mismatches": 0}
+        (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+        result = verify_bundle(tmp_path)
+        assert result.is_valid is True
+
+    def test_flatten_v20_nested_manifest(self, tmp_path):
+        """V20 nested manifest loads correctly."""
+        manifest = {"version": "v18.1", "timestamp": "2026-03-01", "endgame": "KQvK",
+                     "domain": {"total_positions": 368452},
+                     "verification": {"mismatches": 20732, "lossless": False},
+                     "compression": {"baseline_bits": 536008, "total_bits": 219,
+                                     "residual_bits": 149288},
+                     "hashes": {"model.json": "abc123", "residual.v18": "def456"}}
+        (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+        (tmp_path / "residual.v18").write_bytes(b"\x00")
+        bundle = ProofBundle.load(tmp_path)
+        assert bundle.manifest.endgame == "KQvK"
+        assert bundle.manifest.total_positions == 368452
+        assert bundle.manifest.mismatches == 20732
+        assert bundle.manifest.baseline_bits == 536008
+
+    def test_cli_bundle_modelless(self, tmp_path):
+        """CLI bundle command succeeds with model-less bundle."""
+        manifest = {"endgame": "cli_test", "version": "v18",
+                     "total_positions": 100, "mismatches": 0}
+        (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+        r = subprocess.run(["uv", "run", "proofcodec-verify", "bundle", str(tmp_path), "--json"],
+                           capture_output=True, text=True)
+        assert r.returncode == 0
+        assert json.loads(r.stdout)["is_valid"] is True
 
 
 class TestLeafPredictionValidation:

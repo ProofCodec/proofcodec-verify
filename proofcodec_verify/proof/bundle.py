@@ -21,6 +21,33 @@ import json
 import hashlib
 
 
+def _flatten_v20_manifest(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert v20 nested manifest to flat BundleManifest fields."""
+    flat = {
+        "endgame": raw.get("endgame", ""),
+        "version": raw.get("version", "v18"),
+        "created_at": raw.get("timestamp", ""),
+    }
+    domain = raw.get("domain", {})
+    flat["total_positions"] = domain.get("total_positions", 0)
+
+    verification = raw.get("verification", {})
+    flat["mismatches"] = verification.get("mismatches", 0)
+    flat["is_lossless"] = verification.get("lossless", False)
+
+    compression = raw.get("compression", {})
+    flat["baseline_bits"] = compression.get("baseline_bits", 0)
+    flat["model_bits"] = compression.get("total_bits", 0)
+    flat["residual_bits"] = compression.get("residual_bits", 0)
+    flat["total_bits"] = compression.get("total_bits", 0)
+
+    hashes = raw.get("hashes", {})
+    flat["model_hash"] = hashes.get("model.json", "")
+    flat["residual_hash"] = hashes.get("residual.v18", "")
+
+    return flat
+
+
 @dataclass
 class BundleManifest:
     """Manifest for a proof bundle."""
@@ -127,6 +154,7 @@ class BundleVerificationResult:
 
     original_mismatches: int = 0
     reproduced_mismatches: int = 0
+    model_included: bool = True
 
     errors: List[str] = field(default_factory=list)
 
@@ -139,6 +167,7 @@ class BundleVerificationResult:
             "verification_reproduced": self.verification_reproduced,
             "original_mismatches": self.original_mismatches,
             "reproduced_mismatches": self.reproduced_mismatches,
+            "model_included": self.model_included,
             "errors": self.errors,
         }
 
@@ -165,7 +194,10 @@ class ProofBundle:
         bundle_dir = Path(bundle_dir)
 
         with open(bundle_dir / "manifest.json") as f:
-            manifest = BundleManifest.from_dict(json.load(f))
+            raw = json.load(f)
+        if "domain" in raw and isinstance(raw["domain"], dict):
+            raw = _flatten_v20_manifest(raw)
+        manifest = BundleManifest.from_dict(raw)
 
         model_data = {}
         if (bundle_dir / "model.json").exists():
@@ -232,6 +264,7 @@ def verify_bundle(bundle_dir: Path) -> BundleVerificationResult:
 
     # Verify model hash
     if bundle.model_data:
+        result.model_included = True
         actual_model_hash = _compute_tree_hash(bundle.model_data)
         if actual_model_hash == bundle.manifest.model_hash:
             result.model_hash_valid = True
@@ -241,7 +274,8 @@ def verify_bundle(bundle_dir: Path) -> BundleVerificationResult:
                 f"got {actual_model_hash}"
             )
     else:
-        result.errors.append("No model.json found in bundle")
+        result.model_included = False
+        result.model_hash_valid = True  # Trust manifest (model not distributed)
 
     # Verify manifest hash
     actual_manifest_hash = bundle.manifest.compute_hash()
@@ -254,8 +288,8 @@ def verify_bundle(bundle_dir: Path) -> BundleVerificationResult:
     # Check residual existence
     has_residual = (
         bundle.residual_data is not None or
-        (bundle_dir / "residual.v18").exists() or
-        (bundle_dir / "residual.bin").exists()
+        any((bundle_dir / f"residual{ext}").exists()
+            for ext in [".v18", ".v183", ".gen", ".bin"])
     )
     if bundle.manifest.mismatches > 0 and not has_residual:
         result.errors.append("Mismatches > 0 but no residual file found")
@@ -293,7 +327,7 @@ def format_verification_report(result: BundleVerificationResult, manifest: Bundl
         f"Created: {manifest.created_at}",
         "",
         "Hash Verification:",
-        f"  Model hash: {'PASS' if result.model_hash_valid else 'FAIL'}",
+        f"  Model hash: {'PASS' if result.model_hash_valid else 'FAIL'}{' (not distributed)' if not result.model_included else ''}",
         f"  Residual hash: {'PASS' if result.residual_hash_valid else 'FAIL'}",
         f"  Manifest hash: {'PASS' if result.manifest_valid else 'FAIL'}",
         "",

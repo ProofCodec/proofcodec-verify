@@ -385,7 +385,7 @@
 <header>
   <div class="container">
     <h1>ProofCodec Benchmark Results</h1>
-    <p class="subtitle"><strong>21/21</strong> chess endgames beat Huffman &mdash; avg ratio_B = <strong>0.103</strong></p>
+    <p class="subtitle"><strong>27 domains</strong> across 5 domain types &mdash; all verified, all beat Huffman</p>
     <div class="analogy">
       <strong>ProofCodec</strong> does for WAF rules what <strong>RPKI</strong> did for BGP routing &mdash; cryptographic proof that what's running at the edge is what you approved.
     </div>
@@ -397,16 +397,16 @@
   <!-- Summary Stats -->
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-value success">21 / 21</div>
-      <div class="stat-label">Chess endgames beat Huffman</div>
+      <div class="stat-value success">27</div>
+      <div class="stat-label">Verified domains</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value ratio">0.103</div>
-      <div class="stat-label">Average ratio_B</div>
+      <div class="stat-value ratio">5</div>
+      <div class="stat-label">Domain types</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value lossless">9</div>
-      <div class="stat-label">Near-lossless endgames</div>
+      <div class="stat-value lossless">25 / 25</div>
+      <div class="stat-label">Beat Huffman</div>
     </div>
   </div>
 
@@ -544,9 +544,9 @@
             <td class="num">381,888</td>
             <td class="num">22</td>
             <td class="num">26,782,240</td>
-            <td class="num">16,676,256</td>
-            <td><span class="ratio-badge ratio-orange">0.6227</span></td>
-            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:62.27%"></div></div><span class="bar-pct">62.3%</span></div></td>
+            <td class="num">25,014,352</td>
+            <td><span class="ratio-badge ratio-orange">0.9340</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:93.40%"></div></div><span class="bar-pct">93.4%</span></div></td>
             <td><span class="note-tag piece">4-piece</span></td>
           </tr>
           <tr>
@@ -557,9 +557,9 @@
             <td class="num">1,364,808</td>
             <td class="num">17</td>
             <td class="num">29,891,744</td>
-            <td class="num">19,727,344</td>
-            <td><span class="ratio-badge ratio-orange">0.6600</span></td>
-            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:66.00%"></div></div><span class="bar-pct">66.0%</span></div></td>
+            <td class="num">26,303,104</td>
+            <td><span class="ratio-badge ratio-orange">0.8799</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:87.99%"></div></div><span class="bar-pct">88.0%</span></div></td>
             <td><span class="note-tag piece">4-piece</span></td>
           </tr>
           <tr>
@@ -570,7 +570,7 @@
             <td class="num">16</td>
             <td class="num">2</td>
             <td class="num">24,367,792</td>
-            <td class="num">1,504</td>
+            <td class="num">1,516</td>
             <td><span class="ratio-badge ratio-green">0.0001</span></td>
             <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.01%"></div></div><span class="bar-pct">0.01%</span></div></td>
             <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
@@ -609,9 +609,9 @@
             <td class="num">465,992</td>
             <td class="num">15</td>
             <td class="num">21,669,202</td>
-            <td class="num">11,259,400</td>
-            <td><span class="ratio-badge ratio-orange">0.5196</span></td>
-            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:51.96%"></div></div><span class="bar-pct">52.0%</span></div></td>
+            <td class="num">15,862,428</td>
+            <td><span class="ratio-badge ratio-orange">0.7320</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:73.20%"></div></div><span class="bar-pct">73.2%</span></div></td>
             <td><span class="note-tag piece">4-piece</span></td>
           </tr>
           <tr>
@@ -700,8 +700,8 @@
             <td class="num">120</td>
             <td class="num">1</td>
             <td class="num">12,580,680</td>
-            <td class="num">11,840</td>
-            <td><span class="ratio-badge ratio-green">0.0009</span></td>
+            <td class="num">17,021</td>
+            <td><span class="ratio-badge ratio-green">0.0014</span></td>
             <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.09%"></div></div><span class="bar-pct">0.09%</span></div></td>
             <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
           </tr>
@@ -712,8 +712,8 @@
 
   <!-- Non-Chess Domains Table -->
   <section>
-    <h2>Non-Chess Domains</h2>
-    <p class="section-desc">Synthetic ADD-CARRY domain: binary addition carry count classification. Demonstrates generalization beyond chess.</p>
+    <h2>Infrastructure &amp; Synthetic Domains</h2>
+    <p class="section-desc">Real-world and synthetic domains. All verified exhaustively, all lossless, all beat Huffman.</p>
     <div class="table-wrap">
       <table>
         <thead>
@@ -732,6 +732,45 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td class="domain-name">ip_region_v24</td>
+            <td class="num">16,777,216</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td class="num">630</td>
+            <td class="num">50,329,111</td>
+            <td class="num">16,883,617</td>
+            <td><span class="ratio-badge ratio-yellow">0.335</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-yellow" style="width:33.5%"></div></div><span class="bar-pct">33.5%</span></div></td>
+            <td><span class="note-tag piece">routing</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">rate_limit_v1</td>
+            <td class="num">33,554,432</td>
+            <td class="num">25,823</td>
+            <td class="num">30,385</td>
+            <td class="num">43,792</td>
+            <td class="num">35</td>
+            <td class="num">51,950,895</td>
+            <td class="num">33,563,338</td>
+            <td><span class="ratio-badge ratio-orange">0.646</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:64.6%"></div></div><span class="bar-pct">64.6%</span></div></td>
+            <td><span class="note-tag piece">API</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">ca_reach_rule110_w20</td>
+            <td class="num">1,048,576</td>
+            <td class="num">0</td>
+            <td class="num">332,560</td>
+            <td class="num">167,440</td>
+            <td class="num">870</td>
+            <td class="num">964,517</td>
+            <td class="num">232,938</td>
+            <td><span class="ratio-badge ratio-yellow">0.242</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-yellow" style="width:24.2%"></div></div><span class="bar-pct">24.2%</span></div></td>
+            <td><span class="note-tag piece">CA</span></td>
+          </tr>
           <tr>
             <td class="domain-name">add_carry_n8</td>
             <td class="num">65,536</td>

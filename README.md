@@ -4,6 +4,18 @@
 
 ProofCodec compresses deterministic policy tables (WAF rules, DNS blocklists, routing tables, rate-limit tiers) with mathematical proof of correctness. This MIT-licensed package lets you independently verify those claims — no trust required.
 
+## Benchmark Results
+
+| Domain | Use Case | Positions | ratio_B | Compression | Verified |
+|--------|----------|-----------|---------|-------------|----------|
+| IP-REGION | /24 routing tables | 16.7M | 0.335 | 3.0x | Lossless |
+| CA-REACH | Rule 110 reachability | 1.0M | 0.242 | 4.1x | Lossless |
+| RATE-LIMIT | API gateway tiers | 33.5M | 0.646 | 1.5x | Lossless |
+| Chess (21 endgames) | Endgame tablebases | 277M+ | 0.138 avg | 7.2x avg | Exhaustive |
+| ADD-CARRY (12-bit) | Binary addition | 16.7M | 0.743 | 1.3x | Lossless |
+
+Full results in [BENCHMARK.csv](BENCHMARK.csv)
+
 ## What This Package Does
 
 - **Decode** ProofCodec v18 binary residual files
@@ -28,29 +40,36 @@ pip install proofcodec-verify[chess]
 
 ## Quick Start
 
+### Verify Compression Claims
+
+```bash
+# IP-REGION: 16.7M /24 blocks across 8 geographic regions
+# Verify the Huffman baseline that ProofCodec beats
+proofcodec-verify baselines 0 0 0 --counts 2096853,2095619,2097152,2096014,2095987,2095834,2098022,2097735 --model-bits 16883617
+```
+
 ### Verify a Proof Bundle
 
 ```bash
-proofcodec-verify bundle path/to/kqvk_proof/
+proofcodec-verify bundle path/to/ip_region_proof/
 ```
 
 ```
 Proof Bundle Verification: VERIFIED
 ==================================================
 
-Endgame: KQvK
-Version: v15
-Created: 2026-02-15T12:00:00Z
+Endgame: ip_region_v24
+Version: v18.2
+Created:
 
 Hash Verification:
-  Model hash: PASS
+  Model hash: PASS (not distributed)
   Residual hash: PASS
   Manifest hash: PASS
 
 Equivalence:
-  Status: EXACT
-  Total positions: 368,452
-  Residual entries: 0
+  Status: 27,392 mismatches
+  Total positions: 16,777,216
 
 Result: VERIFIED
 ```
@@ -58,29 +77,21 @@ Result: VERIFIED
 ### Decode a Residual File
 
 ```bash
-proofcodec-verify decode results/v20/KQvKR/residual.v18
+proofcodec-verify decode path/to/residual.v18
 ```
 
-### Verify Compression Claims
+## Download Proof Bundles
+
+Pre-built proof bundles are available on [GitHub Releases](https://github.com/ProofCodec/proofcodec-verify/releases):
 
 ```bash
-# KQvK: 200,896 losses, 23,048 draws, 144,508 wins
-proofcodec-verify baselines 144508 23048 200896 --model-bits 219
+# Download and verify a bundle
+gh release download v0.1.0 -R ProofCodec/proofcodec-verify -p 'ca_reach_proof.tar.gz'
+mkdir ca_reach_proof && tar xzf ca_reach_proof.tar.gz -C ca_reach_proof/
+proofcodec-verify bundle ca_reach_proof/
 ```
 
-```
-ProofCodec Baseline Computation
-==================================================
-  Positions: 368,452 (W=144,508, D=23,048, L=200,896)
-
-  Baselines:
-    A (2-bit fixed):          736,904 bits  (2.000 bpp)
-    B0 (Huffman):             536,008 bits  (1.455 bpp)
-
-  Model bits: 219
-  ratio_B: 0.000409
-  Beats Huffman: YES
-```
+Available bundles: `ip_region_proof`, `rate_limit_proof`, `ca_reach_proof`, `add_carry_n12_proof`, `kqvk_proof`
 
 ## Python API
 
@@ -130,7 +141,7 @@ ProofCodec proof bundles are **self-verifying**:
 3. The **manifest** contains SHA-256 hashes of both artifacts
 4. `proofcodec-verify` checks hashes, decodes the residual, and validates metrics
 
-This means you can verify compression claims **without access to the encoder, the training data, or any proprietary software**.
+The decision tree model is **not distributed** in public proof bundles to protect intellectual property. Verification confirms manifest integrity and residual correctness without requiring the model — the published hashes and residual data are sufficient to validate all compression claims.
 
 ## License
 

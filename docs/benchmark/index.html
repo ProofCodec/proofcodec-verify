@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProofCodec Benchmark Results</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f7f8fa;
+    --bg-card: #ffffff;
+    --text: #1a1a2e;
+    --text-muted: #5a5a7a;
+    --border: #e2e4e8;
+    --border-light: #eef0f4;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --green-bar: #22c55e;
+    --yellow: #ca8a04;
+    --yellow-bg: #fef9c3;
+    --yellow-bar: #eab308;
+    --orange: #ea580c;
+    --orange-bg: #ffedd5;
+    --orange-bar: #f97316;
+    --bar-track: #e5e7eb;
+    --code-bg: #f1f5f9;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117;
+      --bg-alt: #161822;
+      --bg-card: #1c1e2a;
+      --text: #e4e4ef;
+      --text-muted: #9698ab;
+      --border: #2a2d3e;
+      --border-light: #232538;
+      --accent: #60a5fa;
+      --accent-light: #1e3a5f;
+      --green: #4ade80;
+      --green-bg: #14352a;
+      --green-bar: #22c55e;
+      --yellow: #facc15;
+      --yellow-bg: #3b3510;
+      --yellow-bar: #eab308;
+      --orange: #fb923c;
+      --orange-bg: #3b2510;
+      --orange-bar: #f97316;
+      --bar-track: #2a2d3e;
+      --code-bg: #1e2030;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Header */
+  header {
+    padding: 64px 0 48px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+
+  header .subtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-bottom: 24px;
+  }
+
+  header .subtitle strong {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .analogy {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+
+  .analogy strong {
+    color: var(--text);
+  }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 40px 0;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-value {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .stat-value.success { color: var(--green); }
+  .stat-value.ratio { color: var(--accent); }
+  .stat-value.lossless { color: var(--green); }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Section */
+  section {
+    padding: 40px 0;
+  }
+
+  section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  section .section-desc {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+
+  /* Table */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    background: var(--bg-card);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  thead th {
+    background: var(--bg-alt);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  thead th:first-child { border-radius: 12px 0 0 0; }
+  thead th:last-child { border-radius: 0 12px 0 0; }
+
+  tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr:hover { background: var(--bg-alt); }
+
+  td.domain-name {
+    font-weight: 600;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+    font-size: 0.8rem;
+  }
+
+  td.num {
+    text-align: right;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+    font-size: 0.8rem;
+  }
+
+  /* Ratio badge */
+  .ratio-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+  }
+
+  .ratio-green  { background: var(--green-bg);  color: var(--green); }
+  .ratio-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .ratio-orange { background: var(--orange-bg); color: var(--orange); }
+
+  /* Bar */
+  .bar-cell {
+    min-width: 180px;
+  }
+
+  .bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--bar-track);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 100px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .bar-fill.bar-green  { background: var(--green-bar); }
+  .bar-fill.bar-yellow { background: var(--yellow-bar); }
+  .bar-fill.bar-orange { background: var(--orange-bar); }
+
+  .bar-pct {
+    font-size: 0.75rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+    color: var(--text-muted);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* Notes */
+  .note-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 4px;
+  }
+
+  .note-tag.lossless    { background: var(--green-bg); color: var(--green); }
+  .note-tag.near        { background: var(--green-bg); color: var(--green); }
+  .note-tag.best        { background: var(--accent-light); color: var(--accent); }
+  .note-tag.piece       { background: var(--bg-alt); color: var(--text-muted); border: 1px solid var(--border); }
+  .note-tag.synthetic   { background: var(--orange-bg); color: var(--orange); }
+
+  /* Verify section */
+  .verify-section {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-top: 16px;
+  }
+
+  .verify-section h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .verify-step {
+    margin-bottom: 16px;
+  }
+
+  .verify-step .step-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  /* Footer */
+  footer {
+    padding: 40px 0;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+
+  footer p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  footer .license {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    header { padding: 40px 0 32px; }
+    header h1 { font-size: 1.75rem; }
+    header .subtitle { font-size: 1rem; }
+    .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+    .stat-card { padding: 20px 16px; }
+    .stat-value { font-size: 1.75rem; }
+    section h2 { font-size: 1.25rem; }
+    .verify-section { padding: 20px; }
+    .container { padding: 0 16px; }
+  }
+
+  /* Separator between chess and non-chess */
+  .section-divider td {
+    background: var(--bg-alt);
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>ProofCodec Benchmark Results</h1>
+    <p class="subtitle"><strong>21/21</strong> chess endgames beat Huffman &mdash; avg ratio_B = <strong>0.103</strong></p>
+    <div class="analogy">
+      <strong>ProofCodec</strong> does for WAF rules what <strong>RPKI</strong> did for BGP routing &mdash; cryptographic proof that what's running at the edge is what you approved.
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- Summary Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value success">21 / 21</div>
+      <div class="stat-label">Chess endgames beat Huffman</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value ratio">0.103</div>
+      <div class="stat-label">Average ratio_B</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value lossless">9</div>
+      <div class="stat-label">Near-lossless endgames</div>
+    </div>
+  </div>
+
+  <!-- Chess Endgames Table -->
+  <section>
+    <h2>Chess Endgames</h2>
+    <p class="section-desc">All 21 endgames verified exhaustively against Syzygy tablebases. ratio_B &lt; 1.0 means the model beats Huffman baseline.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th style="text-align:right">Positions</th>
+            <th style="text-align:right">W</th>
+            <th style="text-align:right">D</th>
+            <th style="text-align:right">L</th>
+            <th style="text-align:right">Leaves</th>
+            <th style="text-align:right">Baseline B bits</th>
+            <th style="text-align:right">Model bits</th>
+            <th>ratio_B</th>
+            <th class="bar-cell">Compression</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="domain-name">KQvK</td>
+            <td class="num">368,452</td>
+            <td class="num">144,508</td>
+            <td class="num">23,048</td>
+            <td class="num">200,896</td>
+            <td class="num">9</td>
+            <td class="num">536,008</td>
+            <td class="num">219</td>
+            <td><span class="ratio-badge ratio-green">0.0004</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.04%"></div></div><span class="bar-pct">0.04%</span></div></td>
+            <td><span class="note-tag piece">3-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KRvK</td>
+            <td class="num">399,112</td>
+            <td class="num">175,168</td>
+            <td class="num">22,244</td>
+            <td class="num">201,700</td>
+            <td class="num">9</td>
+            <td class="num">596,524</td>
+            <td class="num">1,017</td>
+            <td><span class="ratio-badge ratio-green">0.0017</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.17%"></div></div><span class="bar-pct">0.17%</span></div></td>
+            <td><span class="note-tag piece">3-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KPvK</td>
+            <td class="num">331,352</td>
+            <td class="num">124,960</td>
+            <td class="num">108,788</td>
+            <td class="num">97,604</td>
+            <td class="num">12</td>
+            <td class="num">537,744</td>
+            <td class="num">423</td>
+            <td><span class="ratio-badge ratio-green">0.0008</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.08%"></div></div><span class="bar-pct">0.08%</span></div></td>
+            <td><span class="note-tag piece">3-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KBvK</td>
+            <td class="num">417,228</td>
+            <td class="num">0</td>
+            <td class="num">417,228</td>
+            <td class="num">0</td>
+            <td class="num">1</td>
+            <td class="num">417,228</td>
+            <td class="num">64</td>
+            <td><span class="ratio-badge ratio-green">0.0002</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.02%"></div></div><span class="bar-pct">0.02%</span></div></td>
+            <td><span class="note-tag piece">3-piece</span><span class="note-tag lossless">Lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KNvK</td>
+            <td class="num">429,440</td>
+            <td class="num">0</td>
+            <td class="num">429,440</td>
+            <td class="num">0</td>
+            <td class="num">1</td>
+            <td class="num">429,440</td>
+            <td class="num">64</td>
+            <td><span class="ratio-badge ratio-green">0.0001</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.01%"></div></div><span class="bar-pct">0.01%</span></div></td>
+            <td><span class="note-tag piece">3-piece</span><span class="note-tag lossless">Lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KQvKR</td>
+            <td class="num">19,733,336</td>
+            <td class="num">11,953,856</td>
+            <td class="num">699,664</td>
+            <td class="num">7,079,816</td>
+            <td class="num">28</td>
+            <td class="num">27,512,816</td>
+            <td class="num">4,037,765</td>
+            <td><span class="ratio-badge ratio-yellow">0.1468</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-yellow" style="width:14.68%"></div></div><span class="bar-pct">14.7%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KQvKB</td>
+            <td class="num">20,785,072</td>
+            <td class="num">8,925,252</td>
+            <td class="num">2,762,488</td>
+            <td class="num">9,097,332</td>
+            <td class="num">19</td>
+            <td class="num">32,472,812</td>
+            <td class="num">7,292</td>
+            <td><span class="ratio-badge ratio-green">0.0002</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.02%"></div></div><span class="bar-pct">0.02%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KQvKN</td>
+            <td class="num">21,487,864</td>
+            <td class="num">8,894,128</td>
+            <td class="num">2,505,048</td>
+            <td class="num">10,088,688</td>
+            <td class="num">18</td>
+            <td class="num">32,887,040</td>
+            <td class="num">998</td>
+            <td><span class="ratio-badge ratio-green">0.0000</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.5%"></div></div><span class="bar-pct">&lt;0.01%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KRvKB</td>
+            <td class="num">22,613,192</td>
+            <td class="num">3,787,160</td>
+            <td class="num">18,444,144</td>
+            <td class="num">381,888</td>
+            <td class="num">22</td>
+            <td class="num">26,782,240</td>
+            <td class="num">16,676,256</td>
+            <td><span class="ratio-badge ratio-orange">0.6227</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:62.27%"></div></div><span class="bar-pct">62.3%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KRvKN</td>
+            <td class="num">23,315,984</td>
+            <td class="num">5,210,952</td>
+            <td class="num">16,740,224</td>
+            <td class="num">1,364,808</td>
+            <td class="num">17</td>
+            <td class="num">29,891,744</td>
+            <td class="num">19,727,344</td>
+            <td><span class="ratio-badge ratio-orange">0.6600</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:66.00%"></div></div><span class="bar-pct">66.0%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KBvKN</td>
+            <td class="num">24,367,720</td>
+            <td class="num">56</td>
+            <td class="num">24,367,648</td>
+            <td class="num">16</td>
+            <td class="num">2</td>
+            <td class="num">24,367,792</td>
+            <td class="num">1,504</td>
+            <td><span class="ratio-badge ratio-green">0.0001</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.01%"></div></div><span class="bar-pct">0.01%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KQvKP</td>
+            <td class="num">16,704,944</td>
+            <td class="num">7,471,214</td>
+            <td class="num">1,246,100</td>
+            <td class="num">7,987,630</td>
+            <td class="num">9</td>
+            <td class="num">25,422,258</td>
+            <td class="num">1,741,886</td>
+            <td><span class="ratio-badge ratio-yellow">0.0685</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-yellow" style="width:6.85%"></div></div><span class="bar-pct">6.85%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KRvKP</td>
+            <td class="num">18,063,048</td>
+            <td class="num">9,039,824</td>
+            <td class="num">2,424,280</td>
+            <td class="num">6,598,944</td>
+            <td class="num">33</td>
+            <td class="num">27,086,272</td>
+            <td class="num">3,381,610</td>
+            <td><span class="ratio-badge ratio-yellow">0.1248</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-yellow" style="width:12.48%"></div></div><span class="bar-pct">12.5%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KBvKP</td>
+            <td class="num">18,854,368</td>
+            <td class="num">2,348,842</td>
+            <td class="num">16,039,534</td>
+            <td class="num">465,992</td>
+            <td class="num">15</td>
+            <td class="num">21,669,202</td>
+            <td class="num">11,259,400</td>
+            <td><span class="ratio-badge ratio-orange">0.5196</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:51.96%"></div></div><span class="bar-pct">52.0%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KNvKP</td>
+            <td class="num">19,371,540</td>
+            <td class="num">3,244,696</td>
+            <td class="num">14,909,882</td>
+            <td class="num">1,216,962</td>
+            <td class="num">29</td>
+            <td class="num">23,833,198</td>
+            <td class="num">122,408</td>
+            <td><span class="ratio-badge ratio-green">0.0051</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.51%"></div></div><span class="bar-pct">0.51%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KRPvK</td>
+            <td class="num">18,126,636</td>
+            <td class="num">7,877,172</td>
+            <td class="num">251,868</td>
+            <td class="num">9,997,596</td>
+            <td class="num">2</td>
+            <td class="num">26,255,676</td>
+            <td class="num">138</td>
+            <td><span class="ratio-badge ratio-green">0.0000</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.5%"></div></div><span class="bar-pct">&lt;0.01%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span><span class="note-tag best">Best</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KBPvK</td>
+            <td class="num">18,882,694</td>
+            <td class="num">8,283,622</td>
+            <td class="num">2,069,454</td>
+            <td class="num">8,529,618</td>
+            <td class="num">19</td>
+            <td class="num">29,235,770</td>
+            <td class="num">2,177</td>
+            <td><span class="ratio-badge ratio-green">0.0001</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.01%"></div></div><span class="bar-pct">0.01%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KNPvK</td>
+            <td class="num">19,398,914</td>
+            <td class="num">8,810,640</td>
+            <td class="num">2,234,474</td>
+            <td class="num">8,353,800</td>
+            <td class="num">18</td>
+            <td class="num">29,987,188</td>
+            <td class="num">373</td>
+            <td><span class="ratio-badge ratio-green">0.0000</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.5%"></div></div><span class="bar-pct">&lt;0.01%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KBBvK</td>
+            <td class="num">11,912,320</td>
+            <td class="num">2,503,608</td>
+            <td class="num">6,594,672</td>
+            <td class="num">2,814,040</td>
+            <td class="num">37</td>
+            <td class="num">17,229,968</td>
+            <td class="num">76,814</td>
+            <td><span class="ratio-badge ratio-green">0.0045</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.45%"></div></div><span class="bar-pct">0.45%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KBNvK</td>
+            <td class="num">24,536,088</td>
+            <td class="num">10,822,184</td>
+            <td class="num">2,525,736</td>
+            <td class="num">11,188,168</td>
+            <td class="num">20</td>
+            <td class="num">37,884,008</td>
+            <td class="num">399</td>
+            <td><span class="ratio-badge ratio-green">0.0000</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.5%"></div></div><span class="bar-pct">&lt;0.01%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">KNNvK</td>
+            <td class="num">12,579,944</td>
+            <td class="num">616</td>
+            <td class="num">12,579,208</td>
+            <td class="num">120</td>
+            <td class="num">1</td>
+            <td class="num">12,580,680</td>
+            <td class="num">11,840</td>
+            <td><span class="ratio-badge ratio-green">0.0009</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-green" style="width:0.09%"></div></div><span class="bar-pct">0.09%</span></div></td>
+            <td><span class="note-tag piece">4-piece</span><span class="note-tag near">Near-lossless</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Non-Chess Domains Table -->
+  <section>
+    <h2>Non-Chess Domains</h2>
+    <p class="section-desc">Synthetic ADD-CARRY domain: binary addition carry count classification. Demonstrates generalization beyond chess.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th style="text-align:right">Positions</th>
+            <th style="text-align:right">W</th>
+            <th style="text-align:right">D</th>
+            <th style="text-align:right">L</th>
+            <th style="text-align:right">Leaves</th>
+            <th style="text-align:right">Baseline B bits</th>
+            <th style="text-align:right">Model bits</th>
+            <th>ratio_B</th>
+            <th class="bar-cell">Compression</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="domain-name">add_carry_n8</td>
+            <td class="num">65,536</td>
+            <td class="num">32,209</td>
+            <td class="num">19,476</td>
+            <td class="num">13,851</td>
+            <td class="num">13</td>
+            <td class="num">98,863</td>
+            <td class="num">84,859</td>
+            <td><span class="ratio-badge ratio-orange">0.858</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:85.8%"></div></div><span class="bar-pct">85.8%</span></div></td>
+            <td><span class="note-tag synthetic">n=8</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">add_carry_n10</td>
+            <td class="num">1,048,576</td>
+            <td class="num">372,138</td>
+            <td class="num">428,578</td>
+            <td class="num">247,860</td>
+            <td class="num">590</td>
+            <td class="num">1,668,574</td>
+            <td class="num">1,375,911</td>
+            <td><span class="ratio-badge ratio-orange">0.825</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:82.5%"></div></div><span class="bar-pct">82.5%</span></div></td>
+            <td><span class="note-tag synthetic">n=10</span></td>
+          </tr>
+          <tr>
+            <td class="domain-name">add_carry_n12</td>
+            <td class="num">16,777,216</td>
+            <td class="num">6,166,818</td>
+            <td class="num">6,317,317</td>
+            <td class="num">4,293,081</td>
+            <td class="num">628</td>
+            <td class="num">27,237,115</td>
+            <td class="num">20,248,551</td>
+            <td><span class="ratio-badge ratio-orange">0.743</span></td>
+            <td class="bar-cell"><div class="bar-container"><div class="bar-track"><div class="bar-fill bar-orange" style="width:74.3%"></div></div><span class="bar-pct">74.3%</span></div></td>
+            <td><span class="note-tag synthetic">n=12</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Verify It Yourself -->
+  <section>
+    <h2>Verify It Yourself</h2>
+    <p class="section-desc">Verify any published proof bundle independently. No proprietary software required.</p>
+    <div class="verify-section">
+      <h3>Quick Start</h3>
+      <div class="verify-step">
+        <div class="step-label">1. Install</div>
+        <pre>pip install proofcodec-verify</pre>
+      </div>
+      <div class="verify-step">
+        <div class="step-label">2. Verify a proof bundle</div>
+        <pre>proofcodec-verify bundle path/to/kqvk_proof/</pre>
+      </div>
+      <div class="verify-step">
+        <div class="step-label">3. Check compression claims</div>
+        <pre>proofcodec-verify baselines 144508 23048 200896 --model-bits 219</pre>
+      </div>
+      <div class="verify-step">
+        <div class="step-label">4. Decode a residual file</div>
+        <pre>proofcodec-verify decode path/to/residual.v18</pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <p><span class="license">MIT Licensed</span> &mdash; verify freely, no strings attached.</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+[project]
+name = "proofcodec-verify"
+version = "0.1.0"
+description = "Independent verification toolkit for ProofCodec proof bundles"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "ProofCodec", email = "dyn.see@gmail.com"}]
+requires-python = ">=3.11"
+dependencies = [
+    "leb128>=1.0.0",
+]
+
+[project.optional-dependencies]
+chess = [
+    "python-chess>=1.10.0",
+]
+dev = [
+    "pytest>=7.4.0",
+]
+
+[project.scripts]
+proofcodec-verify = "proofcodec_verify.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ProofCodec/proofcodec-verify"
+Repository = "https://github.com/ProofCodec/proofcodec-verify"
+Issues = "https://github.com/ProofCodec/proofcodec-verify/issues"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["proofcodec_verify*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

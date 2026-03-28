@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Independent verification toolkit for ProofCodec proof bundles"
 readme = "README.md"
 license = {text = "MIT"}
-authors = [{name = "ProofCodec", email = "dyn.see@gmail.com"}]
+authors = [{name = "ProofCodec", email = "dyn@proofcodec.com"}]
 requires-python = ">=3.11"
 dependencies = [
     "leb128>=1.0.0",

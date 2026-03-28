@@ -6,3 +6,8 @@ build/
 .venv/
 .pytest_cache/
 *.so
+js/node_modules/
+wasm/target/
+.claude/
+.mcp.json
+CLAUDE.md

@@ -24,14 +24,14 @@ Quick start:
 
 __version__ = "0.1.0"
 
-from .codec import V18ResidualFile, V18Header, BlockData
+from .codec import V18ResidualFile, V18Header, BlockData, FlatTree
 from .baseline import compute_all_baselines, compute_ratio_B, AllBaselines
 from .proof import verify_bundle, ProofBundle, BundleManifest, format_verification_report
 
 __all__ = [
     "__version__",
     # Codec
-    "V18ResidualFile", "V18Header", "BlockData",
+    "V18ResidualFile", "V18Header", "BlockData", "FlatTree",
     # Baselines
     "compute_all_baselines", "compute_ratio_B", "AllBaselines",
     # Proof

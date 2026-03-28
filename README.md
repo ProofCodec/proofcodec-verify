@@ -122,6 +122,48 @@ bundle = ProofBundle.load("path/to/bundle")
 print(format_verification_report(result, bundle.manifest))
 ```
 
+## JavaScript Decoder
+
+A full JS port of the decode-only codec is available in `js/`:
+
+```bash
+cd js && npm install && npm test
+```
+
+```js
+import { FlatTree, parseResidualFile, buildLookupCache } from '@proofcodec/verify';
+
+// Tree inference
+const tree = new FlatTree(modelJson);
+const label = tree.predict(features);
+
+// Residual decoding
+const file = parseResidualFile(residualBuffer);
+const cache = buildLookupCache(file);
+```
+
+## WASM Decoder
+
+A Rust-based WASM decoder for residual files is available in `wasm/`:
+
+```bash
+cd wasm && bash build.sh  # Produces proofcodec_verify.wasm (~39 KB)
+```
+
+```js
+const { instance } = await WebAssembly.instantiate(wasmBytes);
+const { alloc, load_residual, lookup } = instance.exports;
+
+// Load .v18 file into WASM memory
+const ptr = alloc(residualBytes.length);
+new Uint8Array(instance.exports.memory.buffer).set(residualBytes, ptr);
+load_residual(ptr, residualBytes.length);
+
+// Query corrections (tree inference stays in JS)
+const correction = lookup(leafId, blockId, idxInBlock);
+// correction === -128 means no correction; otherwise it's the label
+```
+
 ## Codec Format
 
 The v18 binary residual format uses:

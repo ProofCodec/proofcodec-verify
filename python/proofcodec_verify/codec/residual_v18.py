@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
+import math
 from typing import List, Tuple, Optional
 
 from .combinadic import (
@@ -123,51 +124,66 @@ def decode_bitmap(data: bytes, n: int, offset: int = 0) -> Tuple[List[int], int]
 
 # === Label Decoding ===
 
-def decode_labels_fixed(data: bytes, k: int, offset: int = 0, leaf_prediction: Optional[int] = None) -> Tuple[List[int], int]:
+def _extract_bits(data: bytes, bit_pos: int, width: int) -> int:
+    """Extract `width` bits from data starting at absolute bit position, handling cross-byte boundaries."""
+    byte_idx = bit_pos // 8
+    bit_idx = bit_pos % 8
+    bits_this_byte = min(width, 8 - bit_idx)
+    value = (data[byte_idx] >> bit_idx) & ((1 << bits_this_byte) - 1)
+    if bits_this_byte < width:
+        bits_next = width - bits_this_byte
+        value |= (data[byte_idx + 1] & ((1 << bits_next) - 1)) << bits_this_byte
+    return value
+
+
+def decode_labels_fixed(
+    data: bytes, k: int, offset: int = 0,
+    leaf_prediction: Optional[int] = None, n_classes: int = 0,
+) -> Tuple[List[int], int]:
     """Decode k labels from packed format.
 
-    When leaf_prediction is provided, uses 1-bit conditional decoding.
-    When leaf_prediction is None, uses legacy 2-bit decoding.
+    Args:
+        data: Raw bytes
+        k: Number of labels
+        offset: Current read offset
+        leaf_prediction: Base prediction for conditional decoding (None = fixed-width)
+        n_classes: Number of classes (0 = legacy 3-class WDL)
 
     Returns (labels, new_offset).
     """
     if k == 0:
         return [], offset
 
+    is_legacy = n_classes == 0 or n_classes == 3
+    all_classes = [-1, 0, 1] if is_legacy else list(range(n_classes))
+
     if leaf_prediction is not None:
-        if leaf_prediction not in (-1, 0, 1):
-            raise ValueError(f"leaf_prediction must be -1, 0, or 1, got {leaf_prediction}")
-        # 1-bit conditional decoding
-        all_classes = [-1, 0, 1]
+        # Conditional decoding: exclude base prediction, variable bit width
         remaining = sorted(c for c in all_classes if c != leaf_prediction)
-
-        num_bytes = (k + 7) // 8
-        packed = data[offset:offset + num_bytes]
-        offset += num_bytes
+        bits_per_label = max(1, math.ceil(math.log2(len(remaining)))) if len(remaining) > 1 else 1
+        total_bits = k * bits_per_label
+        num_bytes = (total_bits + 7) // 8
 
         labels = []
+        base_bit = offset * 8
         for i in range(k):
-            byte_idx = i // 8
-            bit_idx = i % 8
-            bit_val = (packed[byte_idx] >> bit_idx) & 0x1
-            labels.append(remaining[bit_val])
+            code = _extract_bits(data, base_bit + i * bits_per_label, bits_per_label)
+            labels.append(remaining[code])
 
-        return labels, offset
+        return labels, offset + num_bytes
     else:
-        # Legacy 2-bit decoding
-        num_bytes = (k * 2 + 7) // 8
-        packed = data[offset:offset + num_bytes]
-        offset += num_bytes
+        # Fixed-width decoding
+        bits_per_label = 2 if is_legacy else max(1, math.ceil(math.log2(len(all_classes))))
+        total_bits = k * bits_per_label
+        num_bytes = (total_bits + 7) // 8
 
         labels = []
+        base_bit = offset * 8
         for i in range(k):
-            byte_idx = (i * 2) // 8
-            bit_idx = (i * 2) % 8
-            code = (packed[byte_idx] >> bit_idx) & 0x3
-            label = code - 1  # 0 -> -1, 1 -> 0, 2 -> 1
-            labels.append(label)
+            code = _extract_bits(data, base_bit + i * bits_per_label, bits_per_label)
+            labels.append(code - 1 if is_legacy else code)
 
-        return labels, offset
+        return labels, offset + num_bytes
 
 
 # === Block Decoding ===
@@ -177,6 +193,7 @@ def decode_block(
     n_b: int,
     offset: int = 0,
     leaf_prediction: Optional[int] = None,
+    n_classes: int = 0,
 ) -> Tuple[BlockData, IndexEncoding, int]:
     """Decode a NON_EMPTY_BLOCK record to BlockData.
 
@@ -184,7 +201,8 @@ def decode_block(
         data: Raw bytes
         n_b: Block size
         offset: Current read offset
-        leaf_prediction: Leaf's majority class for 1-bit conditional decoding
+        leaf_prediction: Leaf's majority class for conditional decoding
+        n_classes: Number of classes (0 = legacy 3-class WDL)
 
     Returns:
         (BlockData, encoding_used, new_offset)
@@ -206,7 +224,7 @@ def decode_block(
     else:  # BITMAP
         indices, offset = decode_bitmap(data, n_b, offset)
 
-    labels, offset = decode_labels_fixed(data, k, offset, leaf_prediction=leaf_prediction)
+    labels, offset = decode_labels_fixed(data, k, offset, leaf_prediction=leaf_prediction, n_classes=n_classes)
 
     return BlockData(indices=indices, labels=labels), encoding, offset
 

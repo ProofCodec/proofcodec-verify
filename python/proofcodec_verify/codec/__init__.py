@@ -39,6 +39,7 @@ from .v18_codec import (
     decode_record_stream,
     read_leaf_index_table,
 )
+from .flat_tree import FlatTree
 
 __all__ = [
     # Combinadic
@@ -52,4 +53,6 @@ __all__ = [
     "MAGIC", "DEFAULT_BLOCK_SIZE", "LabelCodec", "PartitionMode",
     "V18Header", "LeafIndexEntry", "LeafBlobHeader", "LeafBlob",
     "V18ResidualFile", "decode_record_stream", "read_leaf_index_table",
+    # Flat tree
+    "FlatTree",
 ]

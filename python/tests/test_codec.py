@@ -273,8 +273,63 @@ class TestBundleVerification:
 
 
 class TestLeafPredictionValidation:
-    """Verify that invalid leaf_prediction values raise ValueError."""
+    """Verify multi-class leaf_prediction support."""
 
-    def test_invalid_leaf_prediction(self):
-        with pytest.raises(ValueError, match="leaf_prediction must be -1, 0, or 1"):
-            decode_labels_fixed(b'\x00', 1, 0, leaf_prediction=2)
+    def test_legacy_leaf_prediction_values(self):
+        """Legacy 3-class: leaf_prediction -1, 0, 1 all work."""
+        for pred in (-1, 0, 1):
+            labels, _ = decode_labels_fixed(b'\x00', 1, 0, leaf_prediction=pred, n_classes=0)
+            assert len(labels) == 1
+
+    def test_multiclass_leaf_prediction(self):
+        """Multi-class: leaf_prediction=2 is valid for n_classes=8."""
+        labels, _ = decode_labels_fixed(b'\x00', 1, 0, leaf_prediction=2, n_classes=8)
+        assert len(labels) == 1
+
+
+class TestFlatTree:
+    """Tests for FlatTree decode-only inference."""
+
+    def test_simple_tree(self):
+        """3-node tree: root splits on feature 0 at threshold 5."""
+        from proofcodec_verify.codec.flat_tree import FlatTree
+        model = {
+            "classes": [0, 1],
+            "n_classes": 2,
+            "n_features": 1,
+            "nodes": [
+                {"feature": 0, "threshold": 5.0, "children_left": 1, "children_right": 2, "value": 0},
+                {"feature": -2, "threshold": 0.0, "children_left": -1, "children_right": -1, "value": 0},
+                {"feature": -2, "threshold": 0.0, "children_left": -1, "children_right": -1, "value": 1},
+            ],
+        }
+        tree = FlatTree(model)
+        assert tree.predict([3]) == 0   # 3 <= 5 → left → value 0
+        assert tree.predict([5]) == 0   # 5 <= 5 → left → value 0
+        assert tree.predict([6]) == 1   # 6 > 5 → right → value 1
+        assert tree.num_leaves == 2
+        assert tree.num_nodes == 3
+
+    def test_from_file(self, tmp_path):
+        """Load tree from a JSON file."""
+        from proofcodec_verify.codec.flat_tree import FlatTree
+        model = {
+            "classes": [0, 1],
+            "n_classes": 2,
+            "n_features": 2,
+            "nodes": [
+                {"feature": 1, "threshold": 3.0, "children_left": 1, "children_right": 2, "value": 0},
+                {"feature": -2, "threshold": 0.0, "children_left": -1, "children_right": -1, "value": 1},
+                {"feature": -2, "threshold": 0.0, "children_left": -1, "children_right": -1, "value": 0},
+            ],
+        }
+        path = tmp_path / "model_flat.json"
+        path.write_text(json.dumps(model))
+        tree = FlatTree.from_file(str(path))
+        assert tree.predict([99, 2]) == 1  # feature[1]=2 <= 3 → left
+        assert tree.predict([99, 4]) == 0  # feature[1]=4 > 3 → right
+
+    def test_top_level_import(self):
+        """FlatTree is accessible from the top-level package."""
+        from proofcodec_verify import FlatTree
+        assert FlatTree is not None

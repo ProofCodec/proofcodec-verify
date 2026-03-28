@@ -79,6 +79,7 @@ class V18Header:
     num_leaves: int = 0
     partition_mode: PartitionMode = PartitionMode.LEAF_BLOCK
     label_codec: LabelCodec = LabelCodec.FIXED_2BIT
+    n_classes: int = 0
     model_hash: bytes = field(default_factory=lambda: b'\x00' * 32)
     syzygy_hash: bytes = field(default_factory=lambda: b'\x00' * 32)
     leaf_index_offset: int = 0
@@ -102,15 +103,20 @@ class V18Header:
             num_leaves,
             partition_mode,
             label_codec,
+            n_classes_raw,
+            _reserved_byte,
             model_hash,
             syzygy_hash,
             leaf_index_offset,
             total_positions,
             total_mismatches,
-        ) = struct.unpack('<4sHHIIIBB2x32s32sQQQ', data[:cls.FIXED_SIZE])
+        ) = struct.unpack('<4sHHIIIBBBB32s32sQQQ', data[:cls.FIXED_SIZE])
 
         if magic != MAGIC:
             raise ValueError(f"Invalid magic: {magic} != {MAGIC}")
+
+        # n_classes only meaningful for v30+; legacy v18 files have 0 here
+        n_classes = n_classes_raw if version_major >= 30 else 0
 
         return cls(
             version_major=version_major,
@@ -120,6 +126,7 @@ class V18Header:
             num_leaves=num_leaves,
             partition_mode=PartitionMode(partition_mode),
             label_codec=LabelCodec(label_codec),
+            n_classes=n_classes,
             model_hash=model_hash,
             syzygy_hash=syzygy_hash,
             leaf_index_offset=leaf_index_offset,
@@ -250,6 +257,7 @@ def decode_record_stream(
     n_leaf: int,
     block_size: int,
     leaf_prediction: Optional[int] = None,
+    n_classes: int = 0,
 ) -> List[Tuple[int, Optional[BlockData]]]:
     """Decode a RecordStream into list of (block_id, block_data).
 
@@ -258,7 +266,8 @@ def decode_record_stream(
         num_blocks: Number of blocks in this leaf
         n_leaf: Total positions in this leaf
         block_size: Block size
-        leaf_prediction: Leaf's majority class for 1-bit conditional decoding
+        leaf_prediction: Leaf's majority class for conditional decoding
+        n_classes: Number of classes (0 = legacy 3-class WDL)
 
     Returns list of tuples where block_data is None for empty blocks.
     """
@@ -281,7 +290,7 @@ def decode_record_stream(
             else:
                 n_b = n_leaf - block_id * block_size
 
-            block_data, _, offset = decode_block(data, n_b, offset, leaf_prediction=leaf_prediction)
+            block_data, _, offset = decode_block(data, n_b, offset, leaf_prediction=leaf_prediction, n_classes=n_classes)
             results.append((block_id, block_data))
             block_id += 1
         else:
@@ -344,6 +353,7 @@ class V18ResidualFile:
                 n_leaf,
                 self.header.block_size,
                 leaf_prediction=leaf_pred,
+                n_classes=self.header.n_classes,
             )
 
             leaf_cache: Dict[int, Dict[int, int]] = {}
@@ -378,6 +388,7 @@ class V18ResidualFile:
             n_leaf,
             self.header.block_size,
             leaf_prediction=leaf_pred,
+            n_classes=self.header.n_classes,
         )
 
         for bid, block_data in blocks:

@@ -1,0 +1,14 @@
+{
+  "name": "@proofcodec/verify",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "license": "MIT",
+  "description": "ProofCodec proof bundle verification — decode-only JS implementation",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}
